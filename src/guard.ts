@@ -50,6 +50,21 @@ export function validateNativePath(path: string): string {
     if (path.includes('${')) {
         throw new GuardError('the path contains "${", which the gateway rejects');
     }
+    // fetch resolves dot segments before sending, so the gateway would never see them: refuse them here.
+    const q = path.indexOf('?');
+    for (const raw of (q === -1 ? path : path.slice(0, q)).split('/')) {
+        let seg = raw.split(';')[0] ?? '';
+        for (let i = 0; i < 3; i++) {
+            try {
+                seg = decodeURIComponent(seg);
+            } catch {
+                break;
+            }
+        }
+        if ((seg.split(';')[0] ?? '') === '.' || (seg.split(';')[0] ?? '') === '..') {
+            throw new GuardError('the path contains a "." or ".." dot segment');
+        }
+    }
     return path;
 }
 

@@ -45,6 +45,16 @@ describe('validateNativePath and validateToolPath', () => {
     });
 });
 
+describe('dot segments (fetch would resolve them locally, so the gateway and the approval prompt would never see them)', () => {
+    it('refuses ., .. and their encodings in any segment, but not in the query', () => {
+        for (const p of ['/google/../_/connections', '/google/%2e%2e/x', '/google/.%2E/x', '/a/%252e%252e/x', '/a/x/..', '/a/./x', '/a/..;p=1/x', '/../stripe/v1']) {
+            expect(() => validateNativePath(p), p).toThrow(/dot segment/);
+        }
+        expect(validateNativePath('/a/b..c/.hidden/x.y?next=../x')).toBe('/a/b..c/.hidden/x.y?next=../x');
+        expect(() => validateToolPath('/../stripe/v1')).toThrow(GuardError);
+    });
+});
+
 describe('splitAppPath', () => {
     it('splits /{app}/{native path}?{query}', () => {
         expect(splitAppPath('/google/gmail/v1/users/me/messages?q=is%3Aunread&max=5')).toEqual({

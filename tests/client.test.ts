@@ -69,4 +69,14 @@ describe('GatewayClient.request', () => {
         expect(String((err as Error).message)).toMatch(/within/);
         expect(String((err as Error).message)).not.toContain(testKey());
     });
+
+    it('stops reading at maxBytes and says so; the timeout only covers the wait for headers', async () => {
+        fake.setHandler(() => ({ status: 200, headers: { 'content-type': 'text/plain' }, body: 'z'.repeat(5000) }));
+        const capped = await client.request({ method: 'GET', path: '/x', maxBytes: 1000 });
+        expect(capped.body.length).toBeLessThanOrEqual(1000);
+        expect(capped.truncated).toBe(true);
+        const whole = await client.request({ method: 'GET', path: '/x' });
+        expect(whole.body.length).toBe(5000);
+        expect(whole.truncated).toBeFalsy();
+    });
 });

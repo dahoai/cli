@@ -120,6 +120,13 @@ describe('api_read', () => {
         expect(text(await call('api_read', { app: 'google', path: '/x.png' }))).toContain('[binary body not shown: 3 bytes');
     });
 
+    it('a response cut at the byte cap says so instead of pretending to be complete', async () => {
+        fake.setHandler(() => ({ status: 200, headers: { 'content-type': 'text/plain' }, body: 'q'.repeat(2_000_000) }));
+        const r = await call('api_read', { app: 'google', path: '/huge' });
+        expect(text(r)).toMatch(/response was cut/i);
+        expect(text(r).length).toBeLessThan(MAX_TEXT_CHARS + 800);
+    });
+
     it('a network failure is an error result, not a crash', async () => {
         await fake.close();
         const r = await call('api_read', { app: 'google', path: '/x' });

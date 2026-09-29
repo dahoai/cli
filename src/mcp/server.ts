@@ -11,6 +11,9 @@ import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { GatewayResponse } from '../client.js';
 import type { Config } from '../config.js';
 
+// Enough for MAX_TEXT_CHARS of multi-byte text; anything larger is cut while streaming, never held in memory.
+const MCP_MAX_BYTES = 400_000;
+
 const scalar = z.union([z.string(), z.number(), z.boolean()]);
 const querySchema = z.record(z.string(), z.union([scalar, z.array(scalar)])).optional();
 const headersSchema = z.record(z.string(), z.string()).optional();
@@ -28,6 +31,9 @@ function textResult(text: string, isError = false): CallToolResult {
 function fromResponse(res: GatewayResponse): CallToolResult {
     const ok = res.status >= 200 && res.status < 300;
     const parts = [`HTTP ${res.status}`, bodyForMcp(res.body, res.headers.get('content-type'))];
+    if (res.truncated) {
+        parts.push(`[The response was cut at ${MCP_MAX_BYTES} bytes; use the app's filters, fields or pagination to ask for less.]`);
+    }
     const hint = hintFor(res.status, res.body, res.headers, 'mcp');
     if (hint) {
         parts.push(`Hint: ${hint}`);
@@ -92,6 +98,7 @@ export function createMcpServer(client: GatewayClient, version: string): McpServ
                     path: `/${validateApp(app)}${validateToolPath(path)}`,
                     query: buildQuery(query),
                     headers: checkHeaders(headers),
+                    maxBytes: MCP_MAX_BYTES,
                     ...(connection !== undefined ? { connection: validateConnection(connection) } : {})
                 })
             )
@@ -126,6 +133,7 @@ export function createMcpServer(client: GatewayClient, version: string): McpServ
                     path: `/${validateApp(app)}${validateToolPath(path)}`,
                     query: buildQuery(query),
                     headers: extra,
+                    maxBytes: MCP_MAX_BYTES,
                     ...(payload !== undefined ? { body: payload } : {}),
                     ...(connection !== undefined ? { connection: validateConnection(connection) } : {})
                 });
