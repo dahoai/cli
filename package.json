@@ -3,6 +3,9 @@
     "version": "0.1.0",
     "description": "Command line and MCP server for the DAHO API gateway: use the apps you connected in DAHO with one API key.",
     "license": "MIT",
+    "repository": { "type": "git", "url": "git+https://github.com/dahoai/cli.git" },
+    "homepage": "https://github.com/dahoai/cli#readme",
+    "bugs": { "url": "https://github.com/dahoai/cli/issues" },
     "type": "module",
     "bin": {
         "daho": "dist/bin.js"
