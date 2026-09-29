@@ -118,7 +118,9 @@ function report(res: GatewayResponse, io: CliIo, include: boolean): number {
     }
     const hint = hintFor(res.status, res.body, res.headers, 'cli');
     if (hint) {
-        io.stderr(`hint: ${hint}\n`);
+        // On a terminal stdout and stderr share a screen: keep the hint off the end of the body without changing stdout.
+        const bodyEndsLine = res.body.length === 0 || res.body[res.body.length - 1] === 0x0a;
+        io.stderr(`${bodyEndsLine ? '' : '\n'}hint: ${hint}\n`);
     }
     return res.status >= 200 && res.status < 300 ? 0 : 1;
 }

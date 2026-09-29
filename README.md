@@ -3,8 +3,8 @@
 A command line (`daho`) and a local MCP server (`daho mcp`) for the DAHO API gateway. Use the apps you
 connected in the DAHO portal (Gmail, Google Ads, HubSpot, Stripe, Resend and more) with one API key.
 
-> Status: built and tested locally against a fake gateway. **Not published yet**, and not yet run against
-> the live gateway.
+> Status: tested against a fake gateway and, on 2026-09-29, against the live gateway (CLI and MCP: discovery,
+> a real read, blocked `${` and `..` paths, no key in any output). **Not published to npm yet.**
 
 ## Requirements
 

@@ -251,3 +251,12 @@ describe('minor hardening', () => {
         expect(read.stderr).not.toMatch(/check with a read/i);
     });
 });
+
+describe('hints on a terminal', () => {
+    it('start on their own line when the body has no trailing newline, without touching stdout', async () => {
+        fake.setHandler(() => ({ status: 404, headers: { 'content-type': 'application/json' }, body: '{"error":{"code":"unknown_app"}}' }));
+        const r = await run(['api', '/nope/x']);
+        expect(r.stdout).toBe('{"error":{"code":"unknown_app"}}');
+        expect(r.stderr).toMatch(/^HTTP 404\n\nhint: /);
+    });
+});
