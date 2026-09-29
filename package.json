@@ -1,0 +1,33 @@
+{
+    "name": "@dahoai/cli",
+    "version": "0.1.0",
+    "description": "Command line and MCP server for the DAHO API gateway: use the apps you connected in DAHO with one API key.",
+    "license": "MIT",
+    "type": "module",
+    "bin": {
+        "daho": "dist/bin.js"
+    },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ],
+    "engines": {
+        "node": ">=20"
+    },
+    "scripts": {
+        "build": "tsc -p tsconfig.build.json && node -e \"require('node:fs').chmodSync('dist/bin.js', 0o755)\"",
+        "typecheck": "tsc --noEmit",
+        "test": "npm run build && vitest run",
+        "prepublishOnly": "npm run typecheck && npm test"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "1.31.0",
+        "zod": "4.6.5"
+    },
+    "devDependencies": {
+        "@types/node": "22.20.4",
+        "typescript": "5.8.3",
+        "vitest": "4.1.9"
+    }
+}
