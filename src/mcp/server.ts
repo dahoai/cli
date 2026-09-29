@@ -67,7 +67,7 @@ export function createMcpServer(client: GatewayClient, version: string): McpServ
     server.registerTool(
         'list_apps',
         {
-            description: 'List the apps the user can use through DAHO (Gmail via "google", Google Ads, HubSpot, Stripe, Resend and more), whether each is connected, and how many connections. Start here. Only call apps that are connected.',
+            description: 'List the apps the user connected in DadConnect (Gmail via "google", Google Ads, HubSpot, Stripe, Resend and more), whether each is connected, and how many connections. Start here. Only call apps that are connected.',
             annotations: { readOnlyHint: true, openWorldHint: false }
         },
         () => guarded(() => client.apps())

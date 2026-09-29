@@ -1,7 +1,7 @@
 {
     "name": "@dahoai/cli",
-    "version": "0.1.1",
-    "description": "Command line and MCP server for the DAHO API gateway: use the apps you connected in DAHO with one API key.",
+    "version": "0.2.0",
+    "description": "DadConnect command line and MCP server: use the apps you connected in DadConnect (by DAHO) with one API key.",
     "license": "MIT",
     "repository": { "type": "git", "url": "git+https://github.com/dahoai/cli.git" },
     "homepage": "https://github.com/dahoai/cli#readme",

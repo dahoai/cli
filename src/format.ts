@@ -50,10 +50,10 @@ export function hintFor(status: number, body: Uint8Array, headers: Headers, surf
     const code = error.code;
 
     if (status === 401) {
-        return 'The gateway rejected the API key. Check DAHO_API_KEY, or create a new key in the DAHO portal (API keys page).';
+        return 'The gateway rejected the API key. Check DAHO_API_KEY, or create a new key in DadConnect (https://connect.daho.ai, API keys page).';
     }
     if (status === 404 && code === 'not_connected') {
-        return 'That app is not connected. Connect it in the DAHO portal, then try again.';
+        return 'That app is not connected. Connect it in DadConnect (https://connect.daho.ai), then try again.';
     }
     if (status === 404 && code === 'unknown_app') {
         return 'There is no such app. Run "daho apps" (or the list_apps tool) and use an app value from it.';

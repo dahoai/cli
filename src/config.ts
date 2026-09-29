@@ -12,7 +12,7 @@ const DEFAULT_GATEWAY = 'https://gateway.daho.ai';
 export function loadConfig(env: Record<string, string | undefined>): Config {
     const apiKey = env['DAHO_API_KEY']?.trim();
     if (!apiKey) {
-        throw new ConfigError('set DAHO_API_KEY (create a key in the DAHO portal, on the API keys page)');
+        throw new ConfigError('set DAHO_API_KEY (create a key at https://connect.daho.ai, on the API keys page)');
     }
     if (!/^[\x21-\x7e]+$/.test(apiKey)) {
         throw new ConfigError('DAHO_API_KEY contains whitespace, control or non-ASCII characters');

@@ -21,7 +21,7 @@ export interface CliIo {
 
 const METHODS = ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 
-const usage = (version: string) => `daho ${version}: use your DAHO-connected apps through the DAHO API gateway
+const usage = (version: string) => `daho ${version}: use your DadConnect apps from the command line and from AI agents
 
 Usage:
   daho apps [--json]                      list apps and whether they are connected
@@ -38,7 +38,7 @@ Options for "daho api":
   -i, --include          print the response headers to stderr
 
 Environment:
-  DAHO_API_KEY           your API key (create one in the DAHO portal, API keys page). Required.
+  DAHO_API_KEY           your API key (create one at https://connect.daho.ai, API keys page). Required.
   DAHO_GATEWAY_URL       override the gateway URL (https, or http for localhost only)
 
 The response body goes to stdout and the HTTP status to stderr. Exit codes: 0 success, 1 HTTP error

@@ -1,7 +1,7 @@
-# @dahoai/cli
+# DadConnect CLI and MCP server (`@dahoai/cli`)
 
-A command line (`daho`) and a local MCP server (`daho mcp`) for the DAHO API gateway. Use the apps you
-connected in the DAHO portal (Gmail, Google Ads, HubSpot, Stripe, Resend and more) with one API key.
+A command line (`daho`) and a local MCP server (`daho mcp`) for **DadConnect** by DAHO. Use the apps you
+connected at https://connect.daho.ai (Gmail, Google Ads, HubSpot, Stripe, Resend and more) with one API key.
 
 > Status: tested against a fake gateway and, on 2026-09-29, against the live gateway (CLI and MCP: discovery,
 > a real read, blocked `${` and `..` paths, no key in any output).
@@ -9,7 +9,7 @@ connected in the DAHO portal (Gmail, Google Ads, HubSpot, Stripe, Resend and mor
 ## Requirements
 
 - Node 20+
-- A DAHO API key: create one in the DAHO portal (API keys page) and put it in the environment as
+- A DadConnect API key: create one at https://connect.daho.ai (API keys page) and put it in the environment as
   `DAHO_API_KEY`. The key is read only from the environment and is never printed or stored.
 - Optional: `DAHO_GATEWAY_URL` (default `https://gateway.daho.ai`; must be https, or http for localhost only).
 

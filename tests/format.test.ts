@@ -43,11 +43,11 @@ describe('hintFor', () => {
     });
 
     it('401: check or recreate the key', () => {
-        expect(hintFor(401, err('invalid_key'), none, 'cli')).toMatch(/DAHO_API_KEY.*portal/i);
+        expect(hintFor(401, err('invalid_key'), none, 'cli')).toMatch(/DAHO_API_KEY.*DadConnect/);
     });
 
     it('404 variants point to the right next step', () => {
-        expect(hintFor(404, err('not_connected'), none, 'cli')).toMatch(/connect it in the DAHO portal/i);
+        expect(hintFor(404, err('not_connected'), none, 'cli')).toMatch(/connect it in DadConnect/i);
         expect(hintFor(404, err('unknown_app'), none, 'cli')).toMatch(/daho apps/);
         expect(hintFor(404, err('connection_not_found'), none, 'cli')).toMatch(/daho connections/);
     });

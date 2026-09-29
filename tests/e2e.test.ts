@@ -50,7 +50,7 @@ describe('the built binary', () => {
         fake.setHandler(() => ({ status: 404, headers: { 'content-type': 'application/json' }, body: JSON.stringify({ error: { code: 'not_connected' } }) }));
         const r = await run(process.execPath, [BIN, 'api', '/slack/x'], { env: env() }).catch((e: { code: number; stdout: string; stderr: string }) => e);
         expect((r as { code: number }).code).toBe(1);
-        expect((r as { stderr: string }).stderr).toMatch(/connect it in the DAHO portal/i);
+        expect((r as { stderr: string }).stderr).toMatch(/connect it in DadConnect/i);
         expect((r as { stdout: string }).stdout + (r as { stderr: string }).stderr).not.toContain(testKey());
     });
 });
