@@ -1,6 +1,6 @@
 export const MAX_TEXT_CHARS = 100_000;
 
-const TEXT_TYPE = /^(text\/|application\/(json|xml|javascript|x-www-form-urlencoded|yaml|graphql)|[^;]*\+(json|xml))/i;
+const TEXT_TYPE = /^(text\/|application\/(json|xml|javascript|x-www-form-urlencoded|yaml|x-yaml|toml|csv|x-ndjson|ndjson|jsonl|sql|graphql)|[^;]*\+(json|xml))/i;
 
 /** No content type is treated as text; the gateway and most APIs always send one for real payloads. */
 export function isTextual(contentType: string | null): boolean {

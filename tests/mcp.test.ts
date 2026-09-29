@@ -200,3 +200,20 @@ describe('the key never leaks', () => {
         }
     });
 });
+
+describe('minor hardening', () => {
+    it('api_read refuses method-override headers; api_write allows them', async () => {
+        const r = await call('api_read', { app: 'google', path: '/x', headers: { 'X-HTTP-Method-Override': 'DELETE' } });
+        expect(r.isError).toBe(true);
+        expect(fake.requests).toHaveLength(0);
+        const w = await call('api_write', { app: 'google', method: 'POST', path: '/x', headers: { 'X-HTTP-Method-Override': 'PATCH' }, summary: 'Patch one harmless thing' });
+        expect(w.isError).toBeFalsy();
+    });
+
+    it('HEAD shows the response headers (never Set-Cookie) since there is no body', async () => {
+        fake.setHandler(() => ({ status: 200, headers: { 'content-type': 'image/png', 'content-length': '123', etag: '"abc"', 'set-cookie': 'a=b' } }));
+        const r = await call('api_read', { app: 'google', path: '/x.png', method: 'HEAD' });
+        expect(text(r)).toMatch(/etag: "abc"/);
+        expect(text(r)).not.toMatch(/set-cookie/i);
+    });
+});

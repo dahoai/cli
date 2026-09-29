@@ -196,3 +196,58 @@ describe('the key never leaks', () => {
         expect(failing.stdout + failing.stderr).not.toContain(key);
     });
 });
+
+describe('minor hardening', () => {
+    it('usage errors come before the missing-key error', async () => {
+        const noKey = harness({}, { DAHO_API_KEY: undefined });
+        const r = await run(['api'], noKey);
+        expect(r.code).toBe(2);
+        expect(r.stderr).toMatch(/usage: daho api/);
+        expect(r.stderr).not.toMatch(/DAHO_API_KEY/);
+        expect((await run(['apps', '--nope'], harness({}, { DAHO_API_KEY: undefined }))).stderr).not.toMatch(/DAHO_API_KEY/);
+    });
+
+    it('refuses a body on GET/HEAD locally (exit 2, nothing sent)', async () => {
+        const r = await run(['api', '/google/x', '-X', 'GET', '-d', 'hi']);
+        expect(r.code).toBe(2);
+        expect(r.stderr).toMatch(/GET|HEAD/);
+        expect(fake.requests).toHaveLength(0);
+    });
+
+    it('refuses duplicate headers and non-ASCII values as usage errors', async () => {
+        expect((await run(['api', '/x/y', '-H', 'X-A: 1', '-H', 'x-a: 2'])).code).toBe(2);
+        expect((await run(['api', '/x/y', '-H', 'X-A: é€'])).code).toBe(2);
+        expect((await run(['api', '/x/y', '--connection', 'é€'])).code).toBe(2);
+        expect(fake.requests).toHaveLength(0);
+    });
+
+    it('method-override headers are refused on reads and allowed on writes', async () => {
+        expect((await run(['api', '/x/y', '-H', 'X-HTTP-Method-Override: DELETE'])).code).toBe(2);
+        expect(fake.requests).toHaveLength(0);
+        expect((await run(['api', '/x/y', '-X', 'POST', '-d', '{}', '-H', 'X-HTTP-Method-Override: PATCH'])).code).toBe(0);
+    });
+
+    it('--json prints the gateway response exactly as received', async () => {
+        const r = await run(['apps', '--json']);
+        expect(r.stdout).toBe(JSON.stringify((await import('./fake-gateway.js')).APPS));
+    });
+
+    it('apps/connections survive a 2xx body that is not the expected JSON', async () => {
+        fake.setHandler(() => ({ status: 200, headers: { 'content-type': 'text/html' }, body: '<html>captive portal</html>' }));
+        const r = await run(['apps']);
+        expect(r.code).toBe(1);
+        expect(r.stderr).toMatch(/unexpected response/i);
+        fake.setHandler(() => json(200, { nope: true }));
+        expect((await run(['connections'])).stderr).toMatch(/unexpected response/i);
+    });
+
+    it('a network failure on a write says to check before repeating; on a read it does not', async () => {
+        const dead = () => harness({}, { DAHO_GATEWAY_URL: 'http://127.0.0.1:1' });
+        const write = await run(['api', '/resend/emails', '-X', 'POST', '-d', '{}'], dead());
+        expect(write.code).toBe(3);
+        expect(write.stderr).toMatch(/check with a read whether it already happened/i);
+        const read = await run(['api', '/resend/emails'], dead());
+        expect(read.code).toBe(3);
+        expect(read.stderr).not.toMatch(/check with a read/i);
+    });
+});

@@ -1,5 +1,7 @@
 import { execFile, spawn } from 'node:child_process';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { promisify } from 'node:util';
 
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -85,5 +87,19 @@ describe('daho mcp over stdio', () => {
         expect((r as { code: number }).code).toBe(2);
         expect((r as { stdout: string }).stdout).toBe('');
         expect((r as { stderr: string }).stderr).toMatch(/DAHO_API_KEY/);
+    });
+});
+
+describe('closing stdout early', () => {
+    it('does not crash or print a stack trace when the reader goes away (daho api ... | head)', async () => {
+        fake.setHandler(() => ({ status: 200, headers: { 'content-type': 'text/plain' }, body: 'x'.repeat(5_000_000) }));
+        const dir = mkdtempSync(join(tmpdir(), 'daho-epipe-'));
+        const errFile = join(dir, 'err');
+        try {
+            await run('sh', ['-c', `${process.execPath} ${BIN} api /google/big 2>${errFile} | head -c 5 >/dev/null`], { env: env() });
+            expect(readFileSync(errFile, 'utf8')).not.toMatch(/EPIPE|\bat |Error/);
+        } finally {
+            rmSync(dir, { recursive: true });
+        }
     });
 });

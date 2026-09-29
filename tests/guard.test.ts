@@ -121,3 +121,21 @@ describe('validateConnection and validateMethod', () => {
         expect(() => validateMethod('POST', ['GET', 'HEAD'] as const)).toThrow(/GET, HEAD/);
     });
 });
+
+describe('minor hardening', () => {
+    it('only printable ASCII in header values and connection ids (Headers rejects the rest)', () => {
+        expect(() => checkHeaders({ 'X-A': 'é€' })).toThrow(GuardError);
+        expect(() => validateConnection('é€')).toThrow(GuardError);
+    });
+
+    it('read-only calls cannot carry method-override headers; writes may (Google uses them legitimately)', () => {
+        for (const name of ['X-HTTP-Method-Override', 'x-http-method', 'X-Method-Override']) {
+            expect(() => checkHeaders({ [name]: 'DELETE' }, true), name).toThrow(/read-only/);
+            expect(checkHeaders({ [name]: 'PATCH' })).toEqual({ [name]: 'PATCH' });
+        }
+    });
+
+    it('refuses the same header twice in different casings', () => {
+        expect(() => checkHeaders({ 'X-A': '1', 'x-a': '2' })).toThrow(/twice/);
+    });
+});

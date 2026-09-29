@@ -28,9 +28,14 @@ function textResult(text: string, isError = false): CallToolResult {
     return { content: [{ type: 'text', text }], ...(isError ? { isError: true } : {}) };
 }
 
-function fromResponse(res: GatewayResponse): CallToolResult {
+function fromResponse(res: GatewayResponse, showHeaders = false): CallToolResult {
     const ok = res.status >= 200 && res.status < 300;
-    const parts = [`HTTP ${res.status}`, bodyForMcp(res.body, res.headers.get('content-type'))];
+    const parts = [`HTTP ${res.status}`];
+    if (showHeaders) {
+        // A HEAD response has no body; its headers are the answer. Never Set-Cookie.
+        parts.push([...res.headers].filter(([n]) => n.toLowerCase() !== 'set-cookie').map(([n, v]) => `${n}: ${v}`).join('\n'));
+    }
+    parts.push(bodyForMcp(res.body, res.headers.get('content-type')));
     if (res.truncated) {
         parts.push(`[The response was cut at ${MCP_MAX_BYTES} bytes; use the app's filters, fields or pagination to ask for less.]`);
     }
@@ -42,9 +47,9 @@ function fromResponse(res: GatewayResponse): CallToolResult {
 }
 
 /** Runs one gateway call and turns every kind of failure into a tool result the agent can read. */
-async function guarded(work: () => Promise<GatewayResponse>): Promise<CallToolResult> {
+async function guarded(work: () => Promise<GatewayResponse>, showHeaders = false): Promise<CallToolResult> {
     try {
-        return fromResponse(await work());
+        return fromResponse(await work(), showHeaders);
     } catch (err) {
         if (err instanceof GuardError) {
             return textResult(`Not sent: ${err.message}`, true);
@@ -97,10 +102,11 @@ export function createMcpServer(client: GatewayClient, version: string): McpServ
                     method: validateMethod(method ?? 'GET', ['GET', 'HEAD'] as const),
                     path: `/${validateApp(app)}${validateToolPath(path)}`,
                     query: buildQuery(query),
-                    headers: checkHeaders(headers),
+                    headers: checkHeaders(headers, true),
                     maxBytes: MCP_MAX_BYTES,
                     ...(connection !== undefined ? { connection: validateConnection(connection) } : {})
-                })
+                }),
+                method === 'HEAD'
             )
     );
 

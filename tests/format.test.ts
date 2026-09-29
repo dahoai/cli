@@ -7,7 +7,7 @@ const err = (code: string, extra: Record<string, unknown> = {}) => enc(JSON.stri
 
 describe('isTextual', () => {
     it('treats json, text, xml, form and +json/+xml types as text; images and octet-stream as binary', () => {
-        for (const t of ['application/json', 'application/json; charset=utf-8', 'text/plain', 'text/html', 'application/xml', 'application/x-www-form-urlencoded', 'application/vnd.api+json', 'application/atom+xml', null]) {
+        for (const t of ['application/json', 'application/json; charset=utf-8', 'text/plain', 'text/html', 'application/xml', 'application/x-www-form-urlencoded', 'application/vnd.api+json', 'application/atom+xml', 'application/x-ndjson', 'application/csv', 'application/x-yaml', 'application/toml', null]) {
             expect(isTextual(t), String(t)).toBe(true);
         }
         for (const t of ['image/png', 'application/octet-stream', 'application/pdf', 'audio/mpeg']) {

@@ -66,6 +66,8 @@ export async function runCli(argv: string[], io: CliIo): Promise<number> {
     }
 
     try {
+        // Usage errors come first, so a missing key never hides a mistake in the command itself.
+        const parsed = command === 'apps' || command === 'connections' ? parseList(rest) : command === 'api' ? parseApi(rest) : undefined;
         const config = loadConfig(io.env);
         if (!keyLooksRight(config.apiKey)) {
             io.stderr('daho: warning: DAHO_API_KEY does not look like a DAHO key (daho_live_...)\n');
@@ -75,13 +77,10 @@ export async function runCli(argv: string[], io: CliIo): Promise<number> {
             return 0;
         }
         const client = new GatewayClient(config, io.fetchImpl);
-        if (command === 'apps') {
-            return await listCommand(rest, io, client, 'apps');
+        if (command === 'api') {
+            return await runApi(parsed as ApiArgs, io, client);
         }
-        if (command === 'connections') {
-            return await listCommand(rest, io, client, 'connections');
-        }
-        return await apiCommand(rest, io, client);
+        return await runList(command as 'apps' | 'connections', parsed as { json: boolean }, io, client);
     } catch (err) {
         return fail(err, io);
     }
@@ -133,8 +132,12 @@ function table(io: CliIo, header: string[], rows: string[][]): void {
     }
 }
 
-async function listCommand(args: string[], io: CliIo, client: GatewayClient, which: 'apps' | 'connections'): Promise<number> {
-    const { values } = parseArgs({ args, options: { json: { type: 'boolean' } }, strict: true });
+function parseList(args: string[]): { json: boolean } {
+    const { values } = parseArgs({ args, options: { json: { type: 'boolean' } }, strict: true, allowPositionals: false });
+    return { json: values.json ?? false };
+}
+
+async function runList(which: 'apps' | 'connections', opts: { json: boolean }, io: CliIo, client: GatewayClient): Promise<number> {
     const res = which === 'apps' ? await client.apps() : await client.connections();
     if (res.status < 200 || res.status >= 300) {
         io.stderr(`HTTP ${res.status}\n`);
@@ -144,12 +147,21 @@ async function listCommand(args: string[], io: CliIo, client: GatewayClient, whi
         }
         return 1;
     }
-    if (values.json) {
+    if (opts.json) {
         io.stdout(res.body);
-        io.stdout('\n');
         return 0;
     }
-    const data = (JSON.parse(new TextDecoder().decode(res.body)) as { data: Record<string, unknown>[] }).data;
+    let data: Record<string, unknown>[];
+    try {
+        const parsed = JSON.parse(new TextDecoder().decode(res.body)) as { data?: unknown };
+        if (!Array.isArray(parsed.data)) {
+            throw new Error('no data');
+        }
+        data = parsed.data as Record<string, unknown>[];
+    } catch {
+        io.stderr('daho: unexpected response from the gateway (not the expected JSON); try --json to see it\n');
+        return 1;
+    }
     if (which === 'apps') {
         table(io, ['APP', 'CONNECTED', 'CONNECTIONS'], data.map((a) => [String(a['app']), a['connected'] ? 'yes' : 'no', String(a['connections'])]));
     } else {
@@ -158,7 +170,18 @@ async function listCommand(args: string[], io: CliIo, client: GatewayClient, whi
     return 0;
 }
 
-async function apiCommand(args: string[], io: CliIo, client: GatewayClient): Promise<number> {
+interface ApiArgs {
+    method: (typeof METHODS)[number];
+    path: string;
+    query: string;
+    headers: Record<string, string>;
+    connection: string | undefined;
+    data: string | undefined;
+    include: boolean;
+}
+
+/** Everything that can be wrong with the command line itself, checked before the key or the network. */
+function parseApi(args: string[]): ApiArgs {
     const { values, positionals } = parseArgs({
         args,
         allowPositionals: true,
@@ -180,29 +203,55 @@ async function apiCommand(args: string[], io: CliIo, client: GatewayClient): Pro
     }
     const { app, rest, query } = splitAppPath(target);
     const method = validateMethod(values.method ?? (values.data !== undefined ? 'POST' : 'GET'), METHODS);
+    const readOnly = method === 'GET' || method === 'HEAD';
+    if (readOnly && values.data !== undefined) {
+        throw new GuardError(`a ${method} request cannot have a body (-d); use -X POST, PUT, PATCH or DELETE`);
+    }
+    const headers = checkHeaders(Object.fromEntries((values.header ?? []).map(parseHeaderArg)), readOnly);
+    // Object.fromEntries would silently keep the last of two identical names, so count them separately.
+    const names = (values.header ?? []).map((h) => parseHeaderArg(h)[0].toLowerCase());
+    if (new Set(names).size !== names.length) {
+        throw new GuardError('the same header was given twice');
+    }
+    return {
+        method,
+        path: `/${app}${rest}`,
+        query,
+        headers,
+        connection: values.connection !== undefined ? validateConnection(values.connection) : undefined,
+        data: values.data,
+        include: values.include ?? false
+    };
+}
 
+async function runApi(a: ApiArgs, io: CliIo, client: GatewayClient): Promise<number> {
     let body: Uint8Array | undefined;
-    if (values.data !== undefined) {
-        if (values.data === '@-') {
+    if (a.data !== undefined) {
+        if (a.data === '@-') {
             body = await io.readStdin();
-        } else if (values.data.startsWith('@')) {
-            const file = values.data.slice(1);
+        } else if (a.data.startsWith('@')) {
+            const file = a.data.slice(1);
             try {
                 body = await io.readFile(file);
             } catch {
                 throw new GuardError(`cannot read the body file "${file.slice(0, 80)}"`);
             }
         } else {
-            body = new TextEncoder().encode(values.data);
+            body = new TextEncoder().encode(a.data);
         }
     }
-
-    const headers = checkHeaders(Object.fromEntries((values.header ?? []).map(parseHeaderArg)));
+    const headers = { ...a.headers };
     if (body !== undefined && !Object.keys(headers).some((h) => h.toLowerCase() === 'content-type')) {
         headers['Content-Type'] = 'application/json';
     }
-    const connection = values.connection !== undefined ? validateConnection(values.connection) : undefined;
-
-    const res = await client.request({ method, path: `/${app}${rest}`, query, headers, ...(body !== undefined ? { body } : {}), ...(connection ? { connection } : {}) });
-    return report(res, io, values.include ?? false);
+    try {
+        const res = await client.request({ method: a.method, path: a.path, query: a.query, headers, ...(body !== undefined ? { body } : {}), ...(a.connection ? { connection: a.connection } : {}) });
+        return report(res, io, a.include);
+    } catch (err) {
+        if (err instanceof NetworkError && a.method !== 'GET' && a.method !== 'HEAD') {
+            io.stderr(`daho: ${err.message}\nhint: this was a write: check with a read whether it already happened before you repeat it.\n`);
+            return 3;
+        }
+        throw err;
+    }
 }

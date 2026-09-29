@@ -24,6 +24,10 @@ describe('loadConfig', () => {
         }
     });
 
+    it('refuses a key with non-ASCII characters', () => {
+        expect(() => loadConfig({ DAHO_API_KEY: 'daho_live_€€€' })).toThrow(ConfigError);
+    });
+
     it('allows https, and http only for loopback (so the key cannot travel in clear text)', () => {
         expect(loadConfig({ DAHO_API_KEY: KEY, DAHO_GATEWAY_URL: 'http://127.0.0.1:3004' }).gatewayUrl).toBe('http://127.0.0.1:3004');
         expect(loadConfig({ DAHO_API_KEY: KEY, DAHO_GATEWAY_URL: 'http://localhost:8080' }).gatewayUrl).toBe('http://localhost:8080');

@@ -19,6 +19,13 @@ const BLOCKED_HEADERS = new Set([
     'expect'
 ]);
 
+const METHOD_OVERRIDE = new Set(['x-http-method-override', 'x-http-method', 'x-method-override']);
+
+/** Printable ASCII only: fetch's Headers rejects anything above U+00FF, and control characters are never valid. */
+function printableAscii(s: string): boolean {
+    return /^[\x20-\x7e]*$/.test(s);
+}
+
 function hasControl(s: string): boolean {
     for (let i = 0; i < s.length; i++) {
         const c = s.charCodeAt(i);
@@ -117,17 +124,26 @@ export function buildQuery(query: Record<string, Scalar | Scalar[] | null | unde
     return pairs.length > 0 ? `?${pairs.join('&')}` : '';
 }
 
-export function checkHeaders(headers: Record<string, string> | undefined): Record<string, string> {
+export function checkHeaders(headers: Record<string, string> | undefined, readOnly = false): Record<string, string> {
     const out: Record<string, string> = {};
+    const seen = new Set<string>();
     for (const [name, value] of Object.entries(headers ?? {})) {
         if (!TOKEN_RE.test(name)) {
             throw new GuardError(`"${name.slice(0, 40)}" is not a valid header name`);
         }
-        if (BLOCKED_HEADERS.has(name.toLowerCase())) {
+        const lower = name.toLowerCase();
+        if (BLOCKED_HEADERS.has(lower)) {
             throw new GuardError(`the ${name} header is set by the tool and cannot be overridden`);
         }
-        if (hasControl(value)) {
-            throw new GuardError(`the value of the ${name} header contains a control character`);
+        if (readOnly && METHOD_OVERRIDE.has(lower)) {
+            throw new GuardError(`the ${name} header can turn a read into a write, so it is not allowed on read-only calls`);
+        }
+        if (seen.has(lower)) {
+            throw new GuardError(`the ${name} header is given twice`);
+        }
+        seen.add(lower);
+        if (!printableAscii(value)) {
+            throw new GuardError(`the value of the ${name} header must be printable ASCII`);
         }
         out[name] = value;
     }
@@ -143,7 +159,7 @@ export function parseHeaderArg(arg: string): [string, string] {
 }
 
 export function validateConnection(id: string): string {
-    if (id.length === 0 || id.length > 255 || hasControl(id) || /\s/.test(id)) {
+    if (id.length === 0 || id.length > 255 || !printableAscii(id) || /\s/.test(id)) {
         throw new GuardError('the connection id is not valid; copy one from "daho connections"');
     }
     return id;

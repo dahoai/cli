@@ -14,8 +14,8 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     if (!apiKey) {
         throw new ConfigError('set DAHO_API_KEY (create a key in the DAHO portal, on the API keys page)');
     }
-    if (/[\u0000-\u001f\u007f\s]/.test(apiKey)) {
-        throw new ConfigError('DAHO_API_KEY contains whitespace or control characters');
+    if (!/^[\x21-\x7e]+$/.test(apiKey)) {
+        throw new ConfigError('DAHO_API_KEY contains whitespace, control or non-ASCII characters');
     }
 
     const raw = (env['DAHO_GATEWAY_URL'] ?? DEFAULT_GATEWAY).trim().replace(/\/+$/, '');

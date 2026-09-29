@@ -13,6 +13,13 @@ async function readStdin(): Promise<Uint8Array> {
     return Buffer.concat(chunks);
 }
 
+// A reader that goes away early (daho api ... | head) is not an error worth a stack trace.
+process.stdout.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code !== 'EPIPE') {
+        throw err;
+    }
+});
+
 const code = await runCli(process.argv.slice(2), {
     env: process.env,
     stdout: (chunk) => void process.stdout.write(chunk),
