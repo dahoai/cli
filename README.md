@@ -11,7 +11,7 @@ connected at https://connect.daho.ai (Gmail, Google Ads, HubSpot, Stripe, Resend
 - Node 20+
 - A DadConnect API key: create one at https://connect.daho.ai (API keys page) and put it in the environment as
   `DAHO_API_KEY`. The key is read only from the environment and is never printed or stored.
-- Optional: `DAHO_GATEWAY_URL` (default `https://gateway.daho.ai`; must be https, or http for localhost only).
+- Optional: `DAHO_GATEWAY_URL` (default `https://connect-api.daho.ai`; must be https, or http for localhost only).
 
 ## Run
 

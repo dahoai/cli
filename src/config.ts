@@ -7,7 +7,7 @@ export interface Config {
 /** A configuration problem. Messages never contain the key. */
 export class ConfigError extends Error {}
 
-const DEFAULT_GATEWAY = 'https://gateway.daho.ai';
+const DEFAULT_GATEWAY = 'https://connect-api.daho.ai';
 
 export function loadConfig(env: Record<string, string | undefined>): Config {
     const apiKey = env['DAHO_API_KEY']?.trim();

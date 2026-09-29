@@ -6,7 +6,7 @@ const KEY = `daho_live_${'T'.repeat(43)}`;
 
 describe('loadConfig', () => {
     it('reads the key and defaults the gateway URL', () => {
-        expect(loadConfig({ DAHO_API_KEY: KEY })).toEqual({ apiKey: KEY, gatewayUrl: 'https://gateway.daho.ai' });
+        expect(loadConfig({ DAHO_API_KEY: KEY })).toEqual({ apiKey: KEY, gatewayUrl: 'https://connect-api.daho.ai' });
     });
 
     it('trims the key and a trailing slash on the URL', () => {
