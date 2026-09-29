@@ -4,7 +4,7 @@ A command line (`daho`) and a local MCP server (`daho mcp`) for the DAHO API gat
 connected in the DAHO portal (Gmail, Google Ads, HubSpot, Stripe, Resend and more) with one API key.
 
 > Status: tested against a fake gateway and, on 2026-09-29, against the live gateway (CLI and MCP: discovery,
-> a real read, blocked `${` and `..` paths, no key in any output). **Not published to npm yet.**
+> a real read, blocked `${` and `..` paths, no key in any output).
 
 ## Requirements
 
@@ -15,7 +15,7 @@ connected in the DAHO portal (Gmail, Google Ads, HubSpot, Stripe, Resend and mor
 
 ## Run
 
-Once published: `npx -y @dahoai/cli <command>`. From a local clone: `npm ci && npm run build`, then
+`npx -y @dahoai/cli <command>`, or install it with `npm install -g @dahoai/cli` and run `daho <command>`. From a local clone: `npm ci && npm run build`, then
 `node dist/bin.js <command>`.
 
 ## CLI
